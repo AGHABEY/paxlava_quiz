@@ -29,6 +29,6 @@ USER appuser
 VOLUME ["/app/data"]
 EXPOSE 5000
 
-# Production WSGI server. Single worker keeps the JSON file store consistent;
-# requests are still served concurrently via threads.
+# Production WSGI server. Single worker keeps SQLite writes simple; requests
+# are still served concurrently via threads.
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "4", "--timeout", "60", "main:app"]

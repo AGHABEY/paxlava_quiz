@@ -144,19 +144,6 @@ def load_games():
     ]
 
 
-def get_result(result_id):
-    with get_connection() as conn:
-        r = conn.execute("SELECT * FROM results WHERE id = ?", (result_id,)).fetchone()
-    if not r:
-        return None
-    return {
-        "id": r["id"],
-        "team_id": r["team_id"],
-        "team_name": r["team_name"],
-        "rounds": _rounds_from_row(r),
-    }
-
-
 def _get_or_create_game(conn, game_date):
     row = conn.execute("SELECT id FROM games WHERE date = ?", (game_date,)).fetchone()
     if row:
@@ -165,43 +152,63 @@ def _get_or_create_game(conn, game_date):
     return cur.lastrowid
 
 
-def upsert_result(game_date, team_id, team_name, rounds):
-    """Create a result for (date, team), or update an existing one. Only the
-    round keys present in `rounds` are overwritten; the rest keep their value
-    (new rows default missing rounds to 0)."""
+def replace_date_results(game_date, rows):
+    """Replace all results for a date with the given rows (bulk table save).
+    Each row is {"team_id", "team_name", "rounds": {round_key: value}}."""
     with get_connection() as conn:
         game_id = _get_or_create_game(conn, game_date)
-        existing = conn.execute(
-            "SELECT id FROM results WHERE game_id = ? AND team_id = ?",
-            (game_id, team_id),
-        ).fetchone()
-        if existing:
-            set_clauses = ["team_name = ?"]
-            params = [team_name]
-            for key, value in rounds.items():
-                if key in ROUND_KEYS:
-                    set_clauses.append(f"{key} = ?")
-                    params.append(_to_int(value))
-            params.append(existing["id"])
-            conn.execute(f"UPDATE results SET {', '.join(set_clauses)} WHERE id = ?", params)
-        else:
+        conn.execute("DELETE FROM results WHERE game_id = ?", (game_id,))
+        seen_teams = set()
+        for row in rows:
+            team_id = row.get("team_id")
+            team_name = (row.get("team_name") or "").strip()
+            if not team_id or not team_name or team_id in seen_teams:
+                continue
+            seen_teams.add(team_id)
+            conn.execute("INSERT OR IGNORE INTO teams (id, name) VALUES (?, ?)", (team_id, team_name))
+            rounds = row.get("rounds", {})
             cols = ["game_id", "team_id", "team_name"] + ROUND_KEYS
             values = [game_id, team_id, team_name] + [_to_int(rounds.get(k, 0)) for k in ROUND_KEYS]
             placeholders = ", ".join(["?"] * len(cols))
             conn.execute(f"INSERT INTO results ({', '.join(cols)}) VALUES ({placeholders})", values)
 
 
-def update_result_rounds(result_id, rounds):
-    set_clauses = [f"{k} = ?" for k in ROUND_KEYS]
-    params = [_to_int(rounds.get(k, 0)) for k in ROUND_KEYS]
-    params.append(result_id)
-    with get_connection() as conn:
-        conn.execute(f"UPDATE results SET {', '.join(set_clauses)} WHERE id = ?", params)
-
-
 def delete_result(result_id):
     with get_connection() as conn:
         conn.execute("DELETE FROM results WHERE id = ?", (result_id,))
+
+
+def clear_date(game_date):
+    with get_connection() as conn:
+        game = conn.execute("SELECT id FROM games WHERE date = ?", (game_date,)).fetchone()
+        if game:
+            conn.execute("DELETE FROM results WHERE game_id = ?", (game["id"],))
+
+
+# --- Teams (bulk operations) ----------------------------------------------
+
+def rename_teams(id_to_new_name):
+    """Rename teams and propagate the new name to their stored results."""
+    with get_connection() as conn:
+        for team_id, new_name in id_to_new_name.items():
+            new_name = (new_name or "").strip()
+            if not new_name:
+                continue
+            clash = conn.execute(
+                "SELECT 1 FROM teams WHERE lower(name) = lower(?) AND id != ?",
+                (new_name, team_id),
+            ).fetchone()
+            if clash:
+                continue
+            conn.execute("UPDATE teams SET name = ? WHERE id = ?", (new_name, team_id))
+            conn.execute("UPDATE results SET team_name = ? WHERE team_id = ?", (new_name, team_id))
+
+
+def delete_team(team_id):
+    """Delete a team and all of its results."""
+    with get_connection() as conn:
+        conn.execute("DELETE FROM results WHERE team_id = ?", (team_id,))
+        conn.execute("DELETE FROM teams WHERE id = ?", (team_id,))
 
 
 # --- Migration from the old JSON files -------------------------------------
