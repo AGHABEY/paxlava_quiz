@@ -31,7 +31,6 @@ ROUND_FIELDS = [
     ("round_5", "Tur 5"),
     ("round_6", "Tur 6"),
     ("round_7", "Tur 7"),
-    ("round_8", "Tur 8"),
     ("round_8_1", "Tur 8(1)"),
     ("round_8_2", "Tur 8(2)"),
     ("round_8_3", "Tur 8(3)"),
@@ -51,14 +50,7 @@ def get_game_by_date(games, game_date):
 
 
 def get_round_value(rounds, field):
-    legacy_map = {
-        "round_8_1": "round_8(1)",
-        "round_8_2": "round_8(2)",
-        "round_8_3": "round_8(3)",
-    }
-    if field in rounds:
-        return rounds.get(field, 0)
-    return rounds.get(legacy_map.get(field, ""), 0)
+    return rounds.get(field, 0)
 
 
 def normalize_rounds(rounds):
@@ -409,7 +401,6 @@ def scores():
             <td>{get_round_value(item['rounds'], 'round_5')}</td>
             <td>{get_round_value(item['rounds'], 'round_6')}</td>
             <td>{get_round_value(item['rounds'], 'round_7')}</td>
-            <td>{get_round_value(item['rounds'], 'round_8')}</td>
             <td>{get_round_value(item['rounds'], 'round_8_1')}</td>
             <td>{get_round_value(item['rounds'], 'round_8_2')}</td>
             <td>{get_round_value(item['rounds'], 'round_8_3')}</td>
@@ -440,7 +431,7 @@ def scores():
                     <thead>
                         <tr>
                             <th>#</th><th>Komanda</th><th>Tur 1</th><th>Tur 2</th><th>Tur 3</th><th>Tur 4</th>
-                            <th>Tur 5</th><th>Tur 6</th><th>Tur 7</th><th>Tur 8</th><th>Tur 8(1)</th><th>Tur 8(2)</th><th>Tur 8(3)</th><th>Toplam</th>
+                            <th>Tur 5</th><th>Tur 6</th><th>Tur 7</th><th>Tur 8(1)</th><th>Tur 8(2)</th><th>Tur 8(3)</th><th>Toplam</th>
                         </tr>
                     </thead>
                     <tbody>{rows}</tbody>
