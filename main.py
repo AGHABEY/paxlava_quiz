@@ -30,10 +30,10 @@ ROUND_FIELDS = [
     ("round_4", "Tur 4"),
     ("round_5", "Tur 5"),
     ("round_6", "Tur 6"),
-    ("round_7", "Tur 7"),
-    ("round_8_1", "Tur 8(1)"),
-    ("round_8_2", "Tur 8(2)"),
-    ("round_8_3", "Tur 8(3)"),
+    ("round_7", "Tur 7(1)"),
+    ("round_8_1", "Tur 7(2)"),
+    ("round_8_2", "Tur 7(3)"),
+    ("round_8_3", "Tur 7(4)"),
 ]
 
 
@@ -431,7 +431,7 @@ def scores():
                     <thead>
                         <tr>
                             <th>#</th><th>Komanda</th><th>Tur 1</th><th>Tur 2</th><th>Tur 3</th><th>Tur 4</th>
-                            <th>Tur 5</th><th>Tur 6</th><th>Tur 7</th><th>Tur 8(1)</th><th>Tur 8(2)</th><th>Tur 8(3)</th><th>Toplam</th>
+                            <th>Tur 5</th><th>Tur 6</th><th>Tur 7(1)</th><th>Tur 7(2)</th><th>Tur 7(3)</th><th>Tur 7(4)</th><th>Toplam</th>
                         </tr>
                     </thead>
                     <tbody>{rows}</tbody>
